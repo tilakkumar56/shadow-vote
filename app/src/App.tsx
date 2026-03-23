@@ -82,11 +82,20 @@ export default function App() {
       const compDefAddr = getCompDefAccAddress(PROGRAM_ID, compDefOffset);
       const compDefInfo = await connection.getAccountInfo(compDefAddr);
       if (!compDefInfo) {
+        const mxeAddr = getMXEAccAddress(PROGRAM_ID);
+        const arciumProgId = getArciumProgramId();
+        const { getArciumProgram, getLookupTableAddress } = await import("@arcium-hq/client");
+        const arcProg = getArciumProgram(provider!);
+        const mxeAcc = await arcProg.account.mxeAccount.fetch(mxeAddr);
+        const lutAddr = getLookupTableAddress(PROGRAM_ID, (mxeAcc as any).lutOffsetSlot);
+        const LUT_PROGRAM = new PublicKey("AddressLookupTab1e1111111111111111111111111");
         const tx2 = await prog.methods.initCastVoteCompDef().accountsPartial({
           payer: new PublicKey(wallet),
-          mxeAccount: getMXEAccAddress(PROGRAM_ID),
-          arciumProgram: getArciumProgramId(),
+          mxeAccount: mxeAddr,
+          arciumProgram: arciumProgId,
           systemProgram: SystemProgram.programId,
+          addressLookupTable: lutAddr,
+          lutProgram: LUT_PROGRAM,
         }).rpc();
         setTxSigs(p => [...p, tx2]); setChainMsg("Comp def initialized — " + shorten(tx2));
       } else { setChainMsg("Ready — comp def exists"); }
